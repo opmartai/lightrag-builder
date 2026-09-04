@@ -1,0 +1,68 @@
+name: ${STACK_NAME:?Set STACK_NAME}
+services:
+  docling:
+    image: ${DOCLING_IMAGE:?Use runtime.py}
+    ports: ["127.0.0.1:${DOCLING_PORT:-15002}:5001"]
+    networks:
+      knowledge:
+        aliases: ["${DOCLING_ALIAS:-docling}"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/health', timeout=5).read(1)"]
+      interval: 5s
+      timeout: 6s
+      retries: 60
+      start_period: 30s
+    restart: unless-stopped
+
+  controller:
+    image: ${CONTROLLER_IMAGE:?Use runtime.py}
+    build: .
+    pull_policy: never
+    environment:
+      LIGHTRAG_CONTROLLER_TOKEN: ${LIGHTRAG_CONTROLLER_TOKEN:?Set controller token}
+      LIGHTRAG_CONTROLLER_NAMESPACE: ${LIGHTRAG_NAMESPACE:?Set a permanent namespace}
+      LIGHTRAG_CONTROLLER_IMAGE: ${LIGHTRAG_IMAGE:?Use runtime.py}
+      LIGHTRAG_CONTROLLER_NETWORK: ${NETWORK_NAME:?Set NETWORK_NAME}
+      LIGHTRAG_CONTROLLER_ADVERTISE_CONTAINER_IP: ${ADVERTISE_CONTAINER_IP:-false}
+      LIGHTRAG_CONTROLLER_PORT: "9621"
+      LIGHTRAG_CONTROLLER_HEALTH_TIMEOUT_SECONDS: "240"
+      LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:?Set instance API key}
+      POSTGRES_HOST: ${POSTGRES_HOST:?Set external PostgreSQL host}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-lightrag}
+      POSTGRES_VECTOR_INDEX_TYPE: HNSW_HALFVEC
+      LLM_BINDING: ${LLM_BINDING:-openai}
+      LLM_BINDING_HOST: ${LLM_BINDING_HOST:?Set LLM_BINDING_HOST}
+      LLM_BINDING_API_KEY: ${LLM_BINDING_API_KEY:?Set LLM_BINDING_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:?Set LLM_MODEL}
+      EXTRACT_LLM_MODEL: ${EXTRACT_LLM_MODEL:?Set EXTRACT_LLM_MODEL}
+      EXTRACT_LLM_TIMEOUT: ${EXTRACT_LLM_TIMEOUT:-120}
+      EXTRACT_MAX_ASYNC_LLM: ${EXTRACT_MAX_ASYNC_LLM:-2}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-120}
+      KEYWORD_LLM_TIMEOUT: ${KEYWORD_LLM_TIMEOUT:-60}
+      QUERY_LLM_TIMEOUT: ${QUERY_LLM_TIMEOUT:-60}
+      MAX_ASYNC_LLM: ${MAX_ASYNC_LLM:-2}
+      EMBEDDING_FUNC_MAX_ASYNC: ${EMBEDDING_FUNC_MAX_ASYNC:-2}
+      MAX_PARALLEL_INSERT: ${MAX_PARALLEL_INSERT:-1}
+      EMBEDDING_BINDING: ${EMBEDDING_BINDING:-openai}
+      EMBEDDING_BINDING_HOST: ${EMBEDDING_BINDING_HOST:?Set EMBEDDING_BINDING_HOST}
+      EMBEDDING_BINDING_API_KEY: ${EMBEDDING_BINDING_API_KEY:?Set EMBEDDING_BINDING_API_KEY}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:?Set EMBEDDING_MODEL}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:?Set EMBEDDING_DIM}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports: ["127.0.0.1:${CONTROLLER_PORT:-19632}:9630"]
+    networks: [knowledge]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:9630/health', headers={'Authorization':'Bearer '+os.environ['LIGHTRAG_CONTROLLER_TOKEN']}); urllib.request.urlopen(r,timeout=5).read(1)"]
+      interval: 5s
+      timeout: 6s
+      retries: 30
+    restart: unless-stopped
+
+networks:
+  knowledge:
+    external: true
+    name: ${NETWORK_NAME:?Set NETWORK_NAME}
