@@ -1,0 +1,18 @@
+services:
+  docling:
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "true"
+      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "false"
+      GRADIO_ANALYTICS_ENABLED: "false"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      DOCLING_NUM_THREADS: "8"
+      DOCLING_SERVE_ENG_KIND: "local"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: "1"
+      DOCLING_SERVE_MAX_FILE_SIZE: "104857600"
+      DOCLING_SERVE_MAX_DOCUMENT_TIMEOUT: "1800"
+      DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
+    volumes:
+      - "${DOCLING_MODELS_DIR:?Set existing Docling models directory}:/opt/app-root/src/.cache/docling/models"
+      - "${DOCLING_INPUT_DIR:?Set existing Docling input directory}:/data/input:ro"
+      - "${DOCLING_OUTPUT_DIR:?Set existing Docling output directory}:/data/output"

@@ -1,0 +1,17 @@
+[Unit]
+Description=Amazon Experts knowledge runtime
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/usr/local/amazon/lightrag-builder
+ExecStart=/usr/bin/python3 scripts/runtime.py --env-file /etc/amazon-experts/lightrag-runtime.env --compose-file deploy/dev.compose.yaml up
+ExecStop=/usr/bin/python3 scripts/runtime.py --env-file /etc/amazon-experts/lightrag-runtime.env --compose-file deploy/dev.compose.yaml stop
+TimeoutStartSec=900
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

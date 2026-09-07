@@ -30,7 +30,7 @@ def read_env(path, private=False):
 
 
 class Runtime:
-    def __init__(self, env_files):
+    def __init__(self, env_files, compose_files=None):
         self.config = read_env(ROOT / "images.env")
         for path in env_files:
             self.config.update(read_env(path, private=True))
@@ -39,6 +39,9 @@ class Runtime:
         self.env = {**os.environ, **self.config, "COMPOSE_DISABLE_ENV_FILE": "true"}
         self.command = ["docker", "compose", "--env-file", "/dev/null",
                         "-p", self.config["STACK_NAME"], "-f", str(ROOT / "compose.yaml")]
+        for path in compose_files or ():
+            path = Path(path).expanduser()
+            self.command.extend(["-f", str(path if path.is_absolute() else ROOT / path)])
 
     def compose(self, *args):
         subprocess.run(self.command + list(args), env=self.env, check=True)
@@ -76,6 +79,8 @@ def parser():
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--env-file", action="append", required=True,
                         help="Private config; repeat for an explicit override")
+    result.add_argument("--compose-file", action="append",
+                        help="Additional Compose file, relative to the repository or absolute; repeat to layer")
     return result
 
 
@@ -85,7 +90,7 @@ def main():
     args_parser.add_argument("--keep-docling", action="store_true",
                              help="On stop, leave shared Docling running")
     args = args_parser.parse_args()
-    runtime = Runtime(args.env_file)
+    runtime = Runtime(args.env_file, args.compose_file)
     if args.action == "config":
         runtime.compose("config", "--quiet")
         print("Compose configuration valid")

@@ -101,7 +101,7 @@ def main():
     args_parser.add_argument("--index", action="store_true",
                              help="Also run model/embedding indexing and retrieval")
     args = args_parser.parse_args()
-    runtime = Runtime(args.env_file)
+    runtime = Runtime(args.env_file, args.compose_file)
     cfg = runtime.config
     controller = "http://127.0.0.1:" + cfg.get("CONTROLLER_PORT", "19632")
     docling = "http://127.0.0.1:" + cfg.get("DOCLING_PORT", "15002")
